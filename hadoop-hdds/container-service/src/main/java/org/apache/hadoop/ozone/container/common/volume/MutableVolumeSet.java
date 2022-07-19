@@ -125,6 +125,10 @@ public class MutableVolumeSet implements VolumeSet {
       this.volumeFactory = new DbVolumeFactory(conf, usageCheckFactory,
           this, datanodeUuid, clusterID);
       maxVolumeFailuresTolerated = dnConf.getFailedDbVolumesTolerated();
+    } else if (volumeType == StorageVolume.VolumeType.TEMP_VOLUME) {
+      this.volumeFactory = new TempVolumeFactory(conf, usageCheckFactory,
+          this, datanodeUuid, clusterID);
+      maxVolumeFailuresTolerated = dnConf.getFailedTempVolumesTolerated();
     } else {
       this.volumeFactory = new HddsVolumeFactory(conf, usageCheckFactory,
           this, datanodeUuid, clusterID);

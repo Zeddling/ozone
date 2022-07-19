@@ -69,6 +69,7 @@ public abstract class StorageVolume
     DATA_VOLUME,
     META_VOLUME,
     DB_VOLUME,
+    TEMP_VOLUME,
   }
 
   /**

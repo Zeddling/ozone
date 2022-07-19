@@ -47,6 +47,8 @@ public class DatanodeConfiguration {
       "hdds.datanode.failed.metadata.volumes.tolerated";
   public static final String FAILED_DB_VOLUMES_TOLERATED_KEY =
       "hdds.datanode.failed.db.volumes.tolerated";
+  public static final String FAILED_TEMP_VOLUMES_TOLERATED_KEY =
+      "hdds.datanode.failed.temp.volumes.tolerated";
   public static final String DISK_CHECK_MIN_GAP_KEY =
       "hdds.datanode.disk.check.min.gap";
   public static final String DISK_CHECK_TIMEOUT_KEY =
@@ -212,6 +214,17 @@ public class DatanodeConfiguration {
   )
   private int failedDbVolumesTolerated = FAILED_VOLUMES_TOLERATED_DEFAULT;
 
+  @Config(key = "failed.temp.volumes.tolerated",
+      defaultValue = "-1",
+      type = ConfigType.INT,
+      tags = { DATANODE },
+      description = "The number of temp volumes that are allowed to fail "
+          + "before a datanode stops offering service. "
+          + "Config this to -1 means unlimited, but we should have "
+          + "at least one good volume left."
+  )
+  private int failedTempVolumesTolerated = FAILED_VOLUMES_TOLERATED_DEFAULT;
+
   @Config(key = "disk.check.min.gap",
       defaultValue = "15m",
       type = ConfigType.TIME,
@@ -319,6 +332,13 @@ public class DatanodeConfiguration {
       failedDbVolumesTolerated = FAILED_VOLUMES_TOLERATED_DEFAULT;
     }
 
+    if (failedTempVolumesTolerated < -1) {
+      LOG.warn(FAILED_TEMP_VOLUMES_TOLERATED_KEY +
+              "must be greater than -1 and was set to {}. Defaulting to {}",
+              failedTempVolumesTolerated, FAILED_TEMP_VOLUMES_TOLERATED_KEY);
+      failedTempVolumesTolerated = FAILED_VOLUMES_TOLERATED_DEFAULT;
+    }
+
     if (diskCheckMinGap < 0) {
       LOG.warn(DISK_CHECK_MIN_GAP_KEY +
               " must be greater than zero and was set to {}. Defaulting to {}",
@@ -373,6 +393,14 @@ public class DatanodeConfiguration {
 
   public void setFailedDbVolumesTolerated(int failedVolumesTolerated) {
     this.failedDbVolumesTolerated = failedVolumesTolerated;
+  }
+
+  public int getFailedTempVolumesTolerated () {
+    return failedTempVolumesTolerated;
+  }
+
+  public void setFailedTempVolumesTolerated(int failedVolumesTolerated) {
+    this.failedTempVolumesTolerated = failedVolumesTolerated;
   }
 
   public Duration getDiskCheckMinGap() {
