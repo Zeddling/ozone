@@ -69,7 +69,3 @@ Freon OMBR
                        Should contain   ${result}   Successful executions: ${n}
 
 
-Freon S3BG
-    [arguments]    ${prefix}=s3bg    ${n}=100    ${threads}=5000    ${args}=${EMPTY}
-    ${result} =        Execute          ozone freon s3bg ${OM_HA_PARAM} -t ${threads} -n ${n} -p ${prefix} ${args}
-                       Should contain   ${result}   Successful executions: ${n}

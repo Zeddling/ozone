@@ -18,26 +18,36 @@ Documentation       S3 gateway test with aws cli
 Library             OperatingSystem
 Library             String
 Library             BuiltIn
-Resource            ../commonlib.robot
-Resource            ../ozone-lib/freon.robot
+Resource            ./commonawslib.robot
 Test Timeout        5 minutes
-
-*** Variables ***
-${testuser}          testuser
+Resource    freon.robot
 
 *** Keywords ***
-Set Access Key and Id
-    ${result} =         Execute    ozone s3 getsecret
-    ${accessKey} =      Get Regexp Matches         ${result}     (?<=awsAccessKey=).*
-    ${secret} =         Get Regexp Matches         ${result}     (?<=awsSecret=).*
-    ${accessKey} =      Set Variable               ${accessKey[0]}
-    ${secret} =         Set Variable               ${secret[0]}
+#   Export access key and secret to the environment
+Setup aws credentials
+    ${accessKey} =   Execute     aws configure get aws_access_key_id
+    ${secret} =      Execute     aws configure get aws_secret_access_key
     Set Environment Variable    AWS_SECRET_ACCESS_KEY  ${secret}
     Set Environment Variable    AWS_ACCESS_KEY_ID  ${accessKey}
+    ${result} =     Execute         echo $AWS_ACCESS_KEY_ID
+                    Should contain     ${result}    ${accessKey}
+
+Default setup
+    Setup v4 headers
+
+Freon S3BG
+    [arguments]    ${prefix}=s3bg    ${n}=100    ${threads}=5000    ${args}=${EMPTY}
+    ${result} =        Execute          ozone freon s3bg -t ${threads} -n ${n} -p ${prefix} ${args}
+                       Should contain   ${result}   Successful executions: ${n}
 
 *** Test Cases ***
-S3g bucket creation performance
-    Kinit test user    ${testuser}    ${testuser}.keytab
-    Set Access Key and Id
-    Freon S3BG
+Check setup
+    Default Setup
+
+AWS Configuration
+    Setup aws credentials
+
+Run Freon S3BG
+    Run Keyword if      '${SECURITY_ENABLED}' == 'true'     Freon S3BG
+
 
