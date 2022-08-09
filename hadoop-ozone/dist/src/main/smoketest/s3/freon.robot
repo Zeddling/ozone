@@ -19,8 +19,6 @@ Library             OperatingSystem
 Library             String
 Library             BuiltIn
 Resource            ./commonawslib.robot
-Test Timeout        5 minutes
-Resource    freon.robot
 
 *** Keywords ***
 #   Export access key and secret to the environment
@@ -29,14 +27,12 @@ Setup aws credentials
     ${secret} =      Execute     aws configure get aws_secret_access_key
     Set Environment Variable    AWS_SECRET_ACCESS_KEY  ${secret}
     Set Environment Variable    AWS_ACCESS_KEY_ID  ${accessKey}
-    ${result} =     Execute         echo $AWS_ACCESS_KEY_ID
-                    Should contain     ${result}    ${accessKey}
 
 Default setup
     Setup v4 headers
 
 Freon S3BG
-    [arguments]    ${prefix}=s3bg    ${n}=100    ${threads}=5000    ${args}=${EMPTY}
+    [arguments]    ${prefix}=s3bg    ${n}=1    ${threads}=1   ${args}=${EMPTY}
     ${result} =        Execute          ozone freon s3bg -t ${threads} -n ${n} -p ${prefix} ${args}
                        Should contain   ${result}   Successful executions: ${n}
 
@@ -44,7 +40,7 @@ Freon S3BG
 Check setup
     Default Setup
 
-AWS Configuration
+Export AWS credentials
     Setup aws credentials
 
 Run Freon S3BG
