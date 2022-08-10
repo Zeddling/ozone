@@ -44,6 +44,6 @@ Export AWS credentials
     Setup aws credentials
 
 Run Freon S3BG
-    Run Keyword if      '${SECURITY_ENABLED}' == 'true'     Freon S3BG
+    Freon S3BG
 
 
