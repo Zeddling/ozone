@@ -36,10 +36,13 @@ import org.apache.hadoop.hdds.protocol.datanode.proto.ContainerProtos.ContainerC
 import org.apache.hadoop.hdds.protocol.datanode.proto.ContainerProtos.ContainerType;
 import org.apache.hadoop.hdds.scm.container.common.helpers.StorageContainerException;
 import org.apache.hadoop.hdds.security.token.TokenVerifier;
+import org.apache.hadoop.ozone.OzoneConsts;
+import org.apache.hadoop.ozone.container.ContainerTestHelper;
 import org.apache.hadoop.ozone.container.common.helpers.ContainerMetrics;
 import org.apache.hadoop.ozone.container.common.impl.ContainerLayoutVersion;
 import org.apache.hadoop.ozone.container.common.impl.ContainerSet;
 import org.apache.hadoop.ozone.container.common.impl.HddsDispatcher;
+import org.apache.hadoop.ozone.container.common.interfaces.DBHandle;
 import org.apache.hadoop.ozone.container.common.interfaces.Handler;
 import org.apache.hadoop.ozone.container.common.statemachine.DatanodeStateMachine;
 import org.apache.hadoop.ozone.container.common.statemachine.StateContext;
@@ -48,6 +51,7 @@ import org.apache.hadoop.ozone.container.common.volume.HddsVolume;
 import org.apache.hadoop.ozone.container.common.volume.MutableVolumeSet;
 import org.apache.hadoop.ozone.container.common.volume.StorageVolume;
 import org.apache.hadoop.ozone.container.common.volume.VolumeSet;
+import org.apache.hadoop.ozone.container.keyvalue.helpers.BlockUtils;
 import org.apache.ozone.test.GenericTestUtils;
 
 import static org.apache.hadoop.hdds.HddsConfigKeys.HDDS_DATANODE_VOLUME_CHOOSING_POLICY;
@@ -292,25 +296,7 @@ public class TestKeyValueHandler {
   }
 
   @Test
-  public void testListChunkHandling() {
-    Mockito.reset(handler);
-
-    KeyValueContainer container = Mockito.mock(KeyValueContainer.class);
-
-    DispatcherContext context = new DispatcherContext.Builder().build();
-
-    // Test List Chunk Request handling
-    ContainerCommandRequestProto listChunkRequest =
-            getDummyCommandRequestProto(ContainerProtos.Type.ListChunk);
-    KeyValueHandler
-            .dispatchRequest(handler, listChunkRequest, container, context);
-    Mockito.verify(handler, times(2)).handleUnsupportedOp(
-            any(ContainerCommandRequestProto.class));
-
-  }
-
-  @Test
-  public void testPutFileHandling() {
+  public void testPutSmallFileHandling() {
     Mockito.reset(handler);
 
     KeyValueContainer container = Mockito.mock(KeyValueContainer.class);
@@ -328,7 +314,7 @@ public class TestKeyValueHandler {
   }
 
   @Test
-  public void testPutSmallHandling() {
+  public void testGetSmallFileHandling() {
     Mockito.reset(handler);
 
     KeyValueContainer container = Mockito.mock(KeyValueContainer.class);
@@ -350,7 +336,7 @@ public class TestKeyValueHandler {
    * Test that Handler handles different command types correctly.
    */
   @Test
-  public void testHandlerCommandHandling() throws Exception {
+  public void testCreateContainerCommandHandling() throws Exception {
     Mockito.reset(handler);
     // Test Create Container Request handling
     ContainerCommandRequestProto createContainerRequest =
@@ -369,11 +355,14 @@ public class TestKeyValueHandler {
         .dispatchRequest(handler, createContainerRequest, container, context);
     Mockito.verify(handler, times(0)).handleListBlock(
         any(ContainerCommandRequestProto.class), any());
+  }
 
-
-
+  @Test
+  public void testListBlockCommandHandling() {
     // Block Deletion is handled by BlockDeletingService and need not be
     // tested here.
+    KeyValueContainer container = Mockito.mock(KeyValueContainer.class);
+    DispatcherContext context = new DispatcherContext.Builder().build();
 
     ContainerCommandRequestProto listBlockRequest =
         getDummyCommandRequestProto(ContainerProtos.Type.ListBlock);
@@ -381,11 +370,55 @@ public class TestKeyValueHandler {
         .dispatchRequest(handler, listBlockRequest, container, context);
     Mockito.verify(handler, times(1)).handleUnsupportedOp(
         any(ContainerCommandRequestProto.class));
+  }
 
+  /**
+   * Test delete internal
+   * */
+  @Test
+  public void testDeleteInternal() throws IOException {
+    Mockito.reset(handler);
+    //  Create container with proto request
+    ContainerCommandRequestProto createContainerRequest =
+        ContainerProtos.ContainerCommandRequestProto.newBuilder()
+            .setCmdType(ContainerProtos.Type.CreateContainer)
+            .setContainerID(DUMMY_CONTAINER_ID)
+            .setDatanodeUuid(DATANODE_UUID)
+            .setCreateContainer(ContainerProtos.CreateContainerRequestProto
+                .getDefaultInstance())
+            .build();
 
+    KeyValueContainer container = Mockito.mock(KeyValueContainer.class);
+    DispatcherContext context = new DispatcherContext.Builder().build();
 
-    // Chunk Deletion is handled by BlockDeletingService and need not be
-    // tested here
+    KeyValueHandler.dispatchRequest(
+        handler, createContainerRequest, container, context
+    );
+    Mockito.verify(handler, times(1)).handleCreateContainer(
+        any(ContainerCommandRequestProto.class), container
+    );
+
+    //  Assertion variables
+    long containerId = container.getContainerData().getContainerID();
+    int prevContainerCount = handler.getContainerCount();
+
+    //  TODO: Call KeyValueHandler.handleDeleteContainer()
+    ContainerCommandRequestProto deleteContainerRequest =
+        getDummyCommandRequestProto(ContainerProtos.Type.DeleteContainer);
+
+    KeyValueHandler.dispatchRequest(
+        handler, deleteContainerRequest, container, context
+    );
+    Mockito.verify(handler, times(1)).handleDeleteContainer(
+      any(ContainerCommandRequestProto.class), container
+    );
+    //  TODO: Assert container doesn't exist in containerset
+
+    //  TODO: Assert container metadatapath not there
+
+    //  TODO: Assert container chunkspath deleted
+
+    //  TODO: Assert container deleted from blockutil db
   }
 
   @Test

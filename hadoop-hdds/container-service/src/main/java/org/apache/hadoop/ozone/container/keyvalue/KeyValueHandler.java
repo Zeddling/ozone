@@ -1145,4 +1145,9 @@ public class KeyValueHandler extends Handler {
     container.getContainerData().setState(State.DELETED);
     sendICR(container);
   }
+
+  @VisibleForTesting
+  public int getContainerCount() {
+    return this.containerSet.containerCount();
+  }
 }
