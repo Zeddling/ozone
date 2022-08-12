@@ -19,31 +19,37 @@ Library             OperatingSystem
 Library             String
 Library             BuiltIn
 Resource            ./commonawslib.robot
+Suite Setup         Setup v4 headers
+
+
+*** Variables ***
+${ENDPOINT_URL}         http://s3g:9878
+${SECURITY_ENABLED}     true
 
 *** Keywords ***
 #   Export access key and secret to the environment
 Setup aws credentials
-    ${accessKey} =   Execute     aws configure get aws_access_key_id
-    ${secret} =      Execute     aws configure get aws_secret_access_key
-    Set Environment Variable    AWS_SECRET_ACCESS_KEY  ${secret}
-    Set Environment Variable    AWS_ACCESS_KEY_ID  ${accessKey}
+    ${accessKey} =      Execute     aws configure get aws_access_key_id
+    ${secret} =         Execute     aws configure get aws_secret_access_key
+    Set Environment Variable        AWS_SECRET_ACCESS_KEY  ${secret}
+    Set Environment Variable        AWS_ACCESS_KEY_ID  ${accessKey}
 
-Default setup
-    Setup v4 headers
+Access key id
+    ${env_var}=         Get Environment Variable    AWS_ACCESS_KEY_ID
+    ${sec} =            Get Environment Variable    SECURITY_ENABLED
+    Log to Console      ${env_var}
 
 Freon S3BG
-    [arguments]    ${prefix}=s3bg    ${n}=1    ${threads}=1   ${args}=${EMPTY}
-    ${result} =        Execute          ozone freon s3bg -t ${threads} -n ${n} -p ${prefix} ${args}
-                       Should contain   ${result}   Successful executions: ${n}
+    [arguments]    ${prefix}=s3bg    ${n}=100    ${threads}=10   ${args}=${EMPTY}
+    ${result} =        Execute          ozone freon s3bg -e ${ENDPOINT_URL} -t ${threads} -n ${n} -p ${prefix} ${args}
+                       Should contain   ${result}       Successful executions: ${n}
 
 *** Test Cases ***
-Check setup
-    Default Setup
-
 Export AWS credentials
     Setup aws credentials
 
+Check access key id
+    Access key id
+
 Run Freon S3BG
     Freon S3BG
-
-
