@@ -47,4 +47,6 @@ OZONE-SITE.XML_hdds.heartbeat.interval=5s
 OZONE_CONF_DIR=/etc/hadoop
 OZONE_LOG_DIR=/var/log/hadoop
 
+export SECURITY_ENABLED=false
+
 no_proxy=om,scm,s3g,recon,kdc,localhost,127.0.0.1
