@@ -19,7 +19,7 @@ Library             OperatingSystem
 Library             String
 Library             BuiltIn
 Resource            ./commonawslib.robot
-Suite Setup         Setup v4 headers
+Suite Setup         Setup s3 tests
 
 
 *** Variables ***
@@ -33,20 +33,13 @@ Setup aws credentials
     Set Environment Variable        AWS_SECRET_ACCESS_KEY  ${secret}
     Set Environment Variable        AWS_ACCESS_KEY_ID  ${accessKey}
 
-Access key id
-    ${env_var}=         Get Environment Variable    AWS_ACCESS_KEY_ID
 
 Freon S3BG
+    Setup aws credentials
     [arguments]    ${prefix}=s3bg    ${n}=100    ${threads}=10   ${args}=${EMPTY}
     ${result} =        Execute          ozone freon s3bg -e ${ENDPOINT_URL} -t ${threads} -n ${n} -p ${prefix} ${args}
                        Should contain   ${result}       Successful executions: ${n}
 
 *** Test Cases ***
-Export AWS credentials
-    Setup aws credentials
-
-Check access key id
-    Access key id
-
 Run Freon S3BG
     Freon S3BG
