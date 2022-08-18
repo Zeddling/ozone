@@ -96,6 +96,7 @@ public class TestEndPoint {
       scmServer.stop();
     }
     FileUtil.fullyDelete(testDir);
+    //  TODO: Check tmp dir is empty
   }
 
   @BeforeAll
@@ -112,6 +113,12 @@ public class TestEndPoint {
         .setBoolean(OzoneConfigKeys.DFS_CONTAINER_RATIS_IPC_RANDOM_PORT, true);
     config.set(HddsConfigKeys.HDDS_COMMAND_STATUS_REPORT_INTERVAL, "1s");
     config.setFromObject(new ReplicationConfig().setPort(0));
+  }
+
+  public CleanUpManager initManager() {
+    //  TODO: Create container
+    //  TODO: Create tmp dir
+    return null;
   }
 
   @Test
@@ -150,7 +157,7 @@ public class TestEndPoint {
       VersionEndpointTask versionTask = new VersionEndpointTask(rpcEndPoint,
           conf, ozoneContainer);
       EndpointStateMachine.EndPointStates newState = versionTask.call();
-
+      //  TODO: Add assertion
       // if version call worked the endpoint should automatically move to the
       // next state.
       Assertions.assertEquals(EndpointStateMachine.EndPointStates.REGISTER,
