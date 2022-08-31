@@ -49,6 +49,10 @@ public class CleanUpManager {
   private static final String TMP_DELETE_SERVICE_DIR =
       "/tmp/container_delete_service";
 
+  public String getTmpPath() {
+    return tmpPath;
+  }
+
   private String tmpPath;
 
   public CleanUpManager(HddsVolume hddsVolume) {
