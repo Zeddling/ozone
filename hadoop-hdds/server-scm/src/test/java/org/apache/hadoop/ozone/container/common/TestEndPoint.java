@@ -55,10 +55,13 @@ import org.apache.hadoop.ozone.container.common.states.endpoint.RegisterEndpoint
 import org.apache.hadoop.ozone.container.common.states.endpoint.VersionEndpointTask;
 import org.apache.hadoop.ozone.container.common.utils.StorageVolumeUtil;
 import org.apache.hadoop.ozone.container.common.volume.HddsVolume;
+import org.apache.hadoop.ozone.container.common.volume.MutableVolumeSet;
+import org.apache.hadoop.ozone.container.common.volume.StorageVolume;
 import org.apache.hadoop.ozone.container.ozoneimpl.ContainerController;
 import org.apache.hadoop.ozone.container.ozoneimpl.OzoneContainer;
 import org.apache.hadoop.ozone.container.replication.ReplicationServer.ReplicationConfig;
 import org.apache.hadoop.ozone.protocol.commands.CommandStatus;
+import org.apache.hadoop.thirdparty.com.google.common.io.Files;
 import org.apache.ozone.test.GenericTestUtils;
 import org.apache.hadoop.test.PathUtils;
 import org.apache.hadoop.util.Time;
@@ -69,6 +72,8 @@ import static org.apache.hadoop.hdds.protocol.MockDatanodeDetails.randomDatanode
 import static org.apache.hadoop.ozone.container.upgrade.UpgradeUtils.defaultLayoutVersionProto;
 import static org.apache.hadoop.hdds.upgrade.HDDSLayoutVersionManager.maxLayoutVersion;
 import static org.apache.hadoop.ozone.container.common.ContainerTestUtils.createEndpoint;
+
+import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,11 +94,16 @@ public class TestEndPoint {
   private static ScmTestMock scmServerImpl;
   private static File testDir;
   private static OzoneConfiguration config;
+  private static CleanUpManager manager;
 
   @AfterAll
   public static void tearDown() throws Exception {
     if (scmServer != null) {
       scmServer.stop();
+
+      if (CleanUpManager.checkContainerSchemaV3Enabled(config)) {
+        Assert.assertTrue(manager.tmpDirIsEmpty());
+      }
     }
     FileUtil.fullyDelete(testDir);
   }
@@ -133,6 +143,21 @@ public class TestEndPoint {
     }
   }
 
+  private void testSchemaV3() throws Exception {
+    ContainerTestUtils.enableSchemaV3(config);
+    String clusterId = UUID.randomUUID().toString();
+    String datanodeId = UUID.randomUUID().toString();
+    MutableVolumeSet volumeSet = new MutableVolumeSet(
+        datanodeId, config, null,
+        StorageVolume.VolumeType.DATA_VOLUME, null);
+    HddsVolume volume = (HddsVolume) volumeSet.getVolumesList().get(0);
+    volume.format(clusterId);
+    manager = new CleanUpManager(volume);
+    File testFile = new File(manager.getTmpPath() + "/testFile.txt");
+    Files.touch(testFile);
+    Assert.assertFalse(manager.tmpDirIsEmpty());
+  }
+
   @Test
   /**
    * We make getVersion RPC call, but via the VersionEndpointTask which is
@@ -140,6 +165,7 @@ public class TestEndPoint {
    */
   public void testGetVersionTask() throws Exception {
     OzoneConfiguration conf = SCMTestUtils.getConf();
+    testSchemaV3();
     conf.setFromObject(new ReplicationConfig().setPort(0));
     try (EndpointStateMachine rpcEndPoint = createEndpoint(conf,
         serverAddress, 1000)) {
@@ -159,6 +185,7 @@ public class TestEndPoint {
       // Now rpcEndpoint should remember the version it got from SCM
       Assertions.assertNotNull(rpcEndPoint.getVersion());
     }
+    Assert.assertTrue(manager.tmpDirIsEmpty());
   }
 
   @Test
